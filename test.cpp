@@ -1,14 +1,11 @@
 #include <iostream>
 //#define ARMA_DONT_USE_WRAPPER
 #include <armadillo>
-#include <chrono>
+//#include <chrono>
 using namespace std;
 using namespace arma;
-using namespace std::chrono;
+//using namespace std::chrono;
 //Blas level 3 2 1
-int i =10;
-int b = i;
-int% c = &i;
 double partial_mp2(const mat& B_i, const mat& B_j,vec& Orb_en, const int& ei , const int& ej){ // int% means passing by reference!!!
    		mat W_ab=B_i*B_j.t();
    		double emp2part =0.0;
