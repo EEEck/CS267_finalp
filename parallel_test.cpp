@@ -2,6 +2,7 @@
 //#define ARMA_DONT_USE_WRAPPER
 #include <armadillo>
 #include <omp.h>
+#include<cmath>
 //#include <chrono>
 using namespace std;
 using namespace arma;
@@ -13,14 +14,15 @@ double partial_mp2(const mat& B_i, const mat& B_j,vec& Orb_en, const int& ei , c
    		double d_ijab = 0.0;
 		size_t norb = Orb_en.n_elem;
    		size_t nvir = W_ab.n_rows;
-        size_t nocc = norb - nvir;
-   		for (int a = 0; a < nvir; a++)
+        	size_t nocc = norb - nvir;
+		double nume;
+   		for (int a = 0; a < nvir; ++a)
    		{
-   			for (int b = 0; b < nvir; b++)
+   			for (int b = a+1; b < nvir; ++b)
    			{
    				d_ijab=(Orb_en(ei)+Orb_en(ej)-Orb_en(b+nocc)-Orb_en(a+nocc));
    				// emp2part+=W_ab(a,b)*((W_ab(a,b)) -W_ab(b,a))/d_ijab;
-   				double nume = W_ab(a,b) -W_ab(b,a);
+   				nume = abs(W_ab(a,b) - W_ab(b,a));
    				emp2part+=nume*nume/d_ijab;
    				// std::cout << "W_ab(a,b)*((W_ab(a,b)) -W_ab(b,a))/d_ijab = " << W_ab(a,b)*((W_ab(a,b)) -W_ab(b,a))/d_ijab << std::endl;
    			}
@@ -29,18 +31,21 @@ double partial_mp2(const mat& B_i, const mat& B_j,vec& Orb_en, const int& ei , c
 }
 int main(int argc, char** argv)
 {
-	
-	int nocc= 2;
-	int nvirt = 4;
-	int naux= 2;
+	//Initi vars
+	int nocc= 5;
+	int nvirt = 10;
+	int naux= 30;
+	int nbatch=5;
 	vec orben = vec(nvirt+nocc, fill::ones); orben.randu(nvirt+nocc);
 	cube B_iaq(nvirt, naux, nocc, fill::randu); B_iaq.randn(nvirt, naux, nocc);
 	double emp2=0.0;
 
 
-//goal batches insted of just a slice 
+//goal batches insted of just a slice
+//
+//
 // care only one nested loop and get in bact and unique pairs
-
+	double t1 = omp_get_wtime();
 	#pragma omp parallel
 	{
 		double mp2part_per_thr = 0.0;
@@ -49,23 +54,27 @@ int main(int argc, char** argv)
 		{
 			int id = omp_get_thread_num();
 			cout << "Test" << id<< endl;
+			//cube B_iaq_batch(B_iaq_batch.slice(i).memptr(), nvirt, naux,nbatch, false, false);
 			mat B_i(B_iaq.slice(i).memptr(), nvirt, naux, false, false);
-			for (int j = 0; j < nocc; ++j)
+			
+			for (int j = i+1; j < nocc; ++j)
 			{
 				mat B_j(B_iaq.slice(j).memptr(), nvirt, naux, false, false);
 				mp2part_per_thr+=partial_mp2(B_i,B_j,orben,i,j);
 			}
 		}
-		#pragma omp critical
+		#pragma omp critical //change to atomic for better performance!
 		{
 			emp2+=mp2part_per_thr;
 		}
 	}
-	emp2*=0.25;
 
+	double t2 = omp_get_wtime();
+	cout << "P time:"<< t2-t1<< endl;
 	double zahler = 0.0;
 	double nenner = 0.0;
 	double mp22= 0.0;
+	double t3 = omp_get_wtime();
 	for (int i = 0; i < nocc; ++i)
 	{
 		for (int j = 0; j < nocc; ++j)
@@ -87,6 +96,8 @@ int main(int argc, char** argv)
 
 	mp22 *= 0.25;
 
+	double t4 = omp_get_wtime();
+	cout << "P time naive:"<< t4-t3<< endl;
 	cout << "Compare please: "<< emp2 << "\t"<< mp22 << endl;
 	//cube B_iaq=randu
 	//n_aux=B_iaQ.n_slices
