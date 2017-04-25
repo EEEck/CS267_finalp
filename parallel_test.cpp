@@ -53,10 +53,15 @@ int main(int argc, char** argv)
 		for (int i = 0; i < nocc; ++i)
 		{
 			int id = omp_get_thread_num();
-			cout << "Test" << id<< endl;
+			if(id == 0)
+			{
+				int max_thrds = omp_get_max_threads();
+				cout <<"Max Threads used:" << max_thrds << endl;
+			}
+
 			//cube B_iaq_batch(B_iaq_batch.slice(i).memptr(), nvirt, naux,nbatch, false, false);
 			mat B_i(B_iaq.slice(i).memptr(), nvirt, naux, false, false);
-			
+
 			for (int j = i+1; j < nocc; ++j)
 			{
 				mat B_j(B_iaq.slice(j).memptr(), nvirt, naux, false, false);
