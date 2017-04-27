@@ -1,5 +1,6 @@
 #include <iostream>
 //#define ARMA_DONT_USE_WRAPPER
+#define ARMA_NO_DEBUG
 #include <armadillo>
 #include <omp.h>
 #include<cmath>
@@ -49,12 +50,19 @@ int main(int argc, char** argv)
 				double nume;
 				double d_ijab;
 				mat W_ab=B_i*B_j.t();
+				//const double *Wp(W_ab.memptr());
+				//const double *orbenp(orben.memptr());
 				for (int a = 0; a < nvirt; ++a)
 				{
+					#pragma omp simd reduction(+:mp2part_per_thr)
 					for (int b = a+1; b < nvirt; ++b)
 					{
-						nume = abs(W_ab(a,b) - W_ab(b,a));
+						nume = abs(W_ab(a,b) - W_ab(b,a)); //cant vectorize because of armadiilo wrapper!
+						//nume = abs(Wp[b*nvirt+a] - Wp[a*nvirt+b]); //cant vectorize because of armadiilo wrapper!
 						d_ijab=(orben(i)+orben(j)-orben(b+nocc)-orben(a+nocc));
+						//d_ijab=(orbenp[i]+orbenp[j]-orbenp[b+nocc]-orbenp[a+nocc]);
+						///nume = a + b;
+						//d_ijab = i + j;
 						mp2part_per_thr+=nume*nume/d_ijab;
 						//mp2part_per_thr+=(W_ab(a,b) - W_ab(b,a))*(W_ab(a,b) - W_ab(b,a))/(d_ijab=(orben(i)+orben(j)-orben(b+nocc)-orben(a+nocc)));
 					}
@@ -65,7 +73,7 @@ int main(int argc, char** argv)
 	}
 
 	double t2 = omp_get_wtime();
-	cout << "P time:"<< t2-t1<< endl;
+	cout << "P time:"<< t2-t1<<  emp2  <<endl;
 	double zahler = 0.0;
 	double nenner = 0.0;
 	double mp22= 0.0;
