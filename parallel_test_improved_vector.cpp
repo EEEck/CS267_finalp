@@ -52,6 +52,7 @@ int main(int argc, char** argv)
 				{
 					const double* wa = W_ab.memptr();
 					double dija = orben[i] + orben[j] - orben[a];
+					
 					#pragma omp simd reduction(+:mp2part_per_thr)
 					for (int b = a+1; b < nvirt; ++b)
 					{
