@@ -9,11 +9,28 @@ using namespace std;
 using namespace arma;
 //using namespace std::chrono;
 //Blas level 3 2 1
+int find_option( int argc, char **argv, const char *option )
+{
+    for( int i = 1; i < argc; i++ )
+        if( strcmp( argv[i], option ) == 0 )
+            return i;
+    return -1;
+}
+
+int read_int( int argc, char **argv, const char *option, int default_value )
+{
+    int iplace = find_option( argc, argv, option );
+    if( iplace >= 0 && iplace < argc-1 )
+        return atoi( argv[iplace+1] );
+    return default_value;
+}
+
 int main(int argc, char** argv)
 {
 	//Initi vars
+	//int nocc= 73; //73
+	int nocc = read_int( argc, argv, "-n", 73 );
 	int nbasis =800; //632;
-	int nocc= 73; //73
 	int nvirt =nbasis- nocc ;
 	int naux= 4*nbasis;
 	int nbatch=5;
